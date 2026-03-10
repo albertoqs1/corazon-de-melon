@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Para Cami ❤️</title>
+    <style>
+        /* Reset y estilos base */
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #050103;
+            background: radial-gradient(circle at center, #1a050d 0%, #050103 100%);
+            font-family: 'Arial Black', sans-serif;
+        }
+
+        canvas {
+            display: block;
+            z-index: 5;
+        }
+
+        /* Texto centrado dentro del corazón */
+        #text-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+            z-index: 10;
+            width: 100%;
+        }
+
+        .love-message {
+            color: #ff2d75;
+            font-size: clamp(1.8rem, 10vw, 4rem);
+            line-height: 1.1;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0;
+            filter: blur(8px);
+            animation: appearance 7s ease-in-out infinite;
+            text-shadow: 0 0 15px rgba(255, 45, 117, 0.8),
+                0 0 30px rgba(255, 45, 117, 0.5);
+            user-select: none;
+        }
+
+        @keyframes appearance {
+
+            0%,
+            100% {
+                opacity: 0;
+                filter: blur(12px);
+                transform: scale(0.85);
+            }
+
+            30%,
+            70% {
+                opacity: 1;
+                filter: blur(0px);
+                transform: scale(1);
+            }
+        }
+
+        /* Partículas de fondo */
+        .ambient-particle {
+            position: absolute;
+            color: rgba(255, 45, 117, 0.2);
+            pointer-events: none;
+            z-index: 1;
+            animation: drift 12s linear infinite;
+        }
+
+        @keyframes drift {
+            from {
+                transform: translateY(110vh) rotate(0deg);
+                opacity: 0;
+            }
+
+            20% {
+                opacity: 0.3;
+            }
+
+            80% {
+                opacity: 0.3;
+            }
+
+            to {
+                transform: translateY(-10vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="text-overlay">
+        <h1 class="love-message">TE AMO<br>CAMI</h1>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let particles = [];
+        const particleCount = 1800;
+        const mouse = { x: -2000, y: -2000, radius: 80 };
+
+        const config = {
+            heartScale: 16,
+            beatSpeed: 0.045,
+            particleBaseSize: 1.6
+        };
+
+        let time = 0;
+
+        function init() {
+            setCanvasSize();
+            createParticles();
+            animate();
+            startAmbientEffect();
+        }
+
+        function setCanvasSize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+
+            if (width < 600) {
+                config.heartScale = 11;
+                mouse.radius = 50;
+            } else {
+                config.heartScale = 17;
+                mouse.radius = 90;
+            }
+        }
+
+        class Particle {
+            constructor(tx, ty) {
+                this.baseX = tx;
+                this.baseY = ty;
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = 0;
+                this.vy = 0;
+                this.friction = 0.93;
+                this.speed = 0.04 + Math.random() * 0.08;
+                this.size = Math.random() * config.particleBaseSize + 0.4;
+                this.color = `rgba(255, ${60 + Math.random() * 60}, 140, ${0.7 + Math.random() * 0.3})`;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            update(targetX, targetY) {
+                let dx = targetX - this.x;
+                let dy = targetY - this.y;
+                this.vx += dx * this.speed;
+                this.vy += dy * this.speed;
+
+                let mdx = mouse.x - this.x;
+                let mdy = mouse.y - this.y;
+                let mDist = Math.sqrt(mdx * mdx + mdy * mdy);
+                if (mDist < mouse.radius) {
+                    let angle = Math.atan2(mdy, mdx);
+                    let force = (mouse.radius - mDist) / mouse.radius;
+                    this.vx -= Math.cos(angle) * force * 15;
+                    this.vy -= Math.sin(angle) * force * 15;
+                }
+
+                this.vx *= this.friction;
+                this.vy *= this.friction;
+                this.x += this.vx;
+                this.y += this.vy;
+            }
+        }
+
+        function createParticles() {
+            particles = [];
+            for (let i = 0; i < particleCount; i++) {
+                const t = (i / particleCount) * Math.PI * 2;
+                const x = 16 * Math.pow(Math.sin(t), 3);
+                const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+                particles.push(new Particle(x, y));
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+
+            time += config.beatSpeed;
+            const pulse = 1 + (Math.sin(time) * 0.1);
+
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                const tx = width / 2 + p.baseX * config.heartScale * pulse;
+                const ty = height / 2 + p.baseY * config.heartScale * pulse;
+
+                p.update(tx, ty);
+                p.draw();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        function startAmbientEffect() {
+            const symbols = ['❤', '✨', '💖', '🌸'];
+            setInterval(() => {
+                const el = document.createElement('div');
+                el.className = 'ambient-particle';
+                el.innerHTML = symbols[Math.floor(Math.random() * symbols.length)];
+                el.style.left = Math.random() * 100 + 'vw';
+                el.style.fontSize = (Math.random() * 15 + 10) + 'px';
+                el.style.animationDuration = (Math.random() * 6 + 6) + 's';
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 12000);
+            }, 800);
+        }
+
+        window.addEventListener('resize', setCanvasSize);
+
+        const handleInput = (e) => {
+            mouse.x = e.clientX || (e.touches ? e.touches[0].clientX : -2000);
+            mouse.y = e.clientY || (e.touches ? e.touches[0].clientY : -2000);
+        };
+
+        window.addEventListener('mousemove', handleInput);
+        window.addEventListener('touchstart', handleInput);
+        window.addEventListener('touchmove', handleInput);
+        window.addEventListener('touchend', () => { mouse.x = -2000; mouse.y = -2000; });
+
+        window.onload = init;
+    </script>
+</body>
+
+</html>
